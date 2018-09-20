@@ -10,8 +10,6 @@ import zipfile, os
 from collections import OrderedDict
 import shutil
 
-INT_ID = 1
-
 
 def get_zip_file(input_path, result):
     """
@@ -113,7 +111,7 @@ class FPSParser(object):
                 if not lang:
                     raise ValueError("Invalid " + tag + ", language name is missed")
                 if tag == 'solution':
-                    if lang not in ['Pascal','C#']:
+                    if lang not in ['Pascal', 'C#']:
                         if lang == 'Python':
                             lang = 'Python2'
                         problem[tag].append({"language": lang, "code": item.text})
@@ -209,7 +207,6 @@ class QDUOJ_OBJ:
             PATH = os.path.join(PATH, path)
             if not os.path.exists(PATH):
                 os.mkdir(PATH)
-        global INT_ID
         problem_json = json.dumps(self.data, indent=4)
         with open(os.path.join(target_dir, 'problem.json'), mode='w', encoding='utf-8') as f:
             f.write(problem_json)
@@ -217,8 +214,7 @@ class QDUOJ_OBJ:
         if not os.path.exists(test_case_dir):
             os.mkdir(test_case_dir)
         self.save_test_case(self._problem, test_case_dir)
-        print("Saved :" + str(INT_ID))
-        INT_ID += 1
+        print("Saved :" + str(target_dir))
 
     def save_zipfile(self):
         global INT_ID
@@ -241,17 +237,30 @@ if (__name__ == "__main__"):
     SKIP = 0
     skip = 0
 
-    QDUOJ_FILE_DIR = 'qduoj_file'
+    FPS_DATA = 'fps_data'
 
-    for fname in os.listdir("tmp"):
-        pids = get_pids_from_fname(fname)
-        print(pids)
-        parser = FPSParser("tmp/" + fname)
-        problems = parser.parse()
-        for index, p in enumerate(problems):
-            p['display_id'] = str(pids[index])
-            print("Get problem:" + str(p['display_id']))
-            qobj = QDUOJ_OBJ(p)
-            qobj.save_flat_file(os.path.join(QDUOJ_FILE_DIR, str(INT_ID)))
+    for tag_str in os.listdir(FPS_DATA):
+        QDUOJ_FILE_DIR = tag_str
+        tags = tag_str.split(',')
+        fatherdir = os.path.join(FPS_DATA, tag_str)
+        INDEX = 0
+        for fname in os.listdir(fatherdir):
+            pids = get_pids_from_fname(fname)
+            print(tags, pids)
+            parser = FPSParser(os.path.join(fatherdir, fname))
+            problems = parser.parse()
+            for i,p in enumerate(problems):
+                if(len(p['test_cases'])==0):
+                    print("Warning: %s have no test cases!" % str(pids[i]))
+                    continue
+                p['display_id'] = str(pids[i])
+                print("Get problem:" + str(p['display_id']))
+                qobj = QDUOJ_OBJ(p, tag=tags)
+                qobj.save_flat_file(os.path.join(QDUOJ_FILE_DIR, str(INDEX+1)))
+                INDEX+=1
+                if(INDEX%10==0):
+                    INDEX=0
+                    QDUOJ_FILE_DIR+="_"
 
-    shutil.make_archive('upload', 'zip', QDUOJ_FILE_DIR, )
+
+        # shutil.make_archive(tag_str, 'zip', QDUOJ_FILE_DIR, )
