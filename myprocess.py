@@ -87,7 +87,11 @@ class FPSParser(object):
         for item in node:
             tag = item.tag
             if tag in ["title", "description", "input", "output", "hint", "source"]:
+                if(tag=='input' or tag=='output'):
+                    if(not item.text):
+                        item.text = "No description"
                 problem[item.tag] = item.text
+
             elif tag == "time_limit":
                 unit = item.attrib.get("unit", "s")
                 if unit not in ["s", "ms"]:
@@ -131,7 +135,7 @@ class FPSParser(object):
             elif tag == "sample_input":
                 if not sample_start:
                     raise ValueError("Invalid xml, error 'sample_input' tag order")
-                problem["samples"].append({"input": item.text, "output": None})
+                problem["samples"].append({"input": " "if not item.text else item.text, "output": None})
                 sample_start = False
             elif tag == "sample_output":
                 if sample_start:
@@ -253,6 +257,8 @@ if (__name__ == "__main__"):
                 if(len(p['test_cases'])==0):
                     print("Warning: %s have no test cases!" % str(pids[i]))
                     continue
+                # if(not p['samples'][0]['input']):
+                #     print("Warning :Sample input Empty! %s" % str(pids[i]))
                 p['display_id'] = str(pids[i])
                 print("Get problem:" + str(p['display_id']))
                 qobj = QDUOJ_OBJ(p, tag=tags)
